@@ -17,3 +17,8 @@ variable "get_customer_orders_lambda_arn" {
   description = "ARN of the GetCustomerOrdersFunction Lambda"
   type        = string
 }
+
+variable "cognito_user_pool_arn" {
+  description = "ARN of the Cognito User Pool"
+  type        = string
+}

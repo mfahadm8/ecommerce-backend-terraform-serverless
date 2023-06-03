@@ -1,14 +1,4 @@
 
-# Retrieve the ARN of the CreateOrder Lambda function, the other way would be simpling passing hte arn from root's main.tf file from the outputs of lambda module
-data "aws_lambda_function" "create_order_lambda" {
-  function_name = var.create_order_lambda_name
-}
-
-# Retrieve the ARN of the GetCustomerOrders Lambda function
-data "aws_lambda_function" "get_customer_orders_lambda" {
-  function_name = var.get_customer_orders_lambda_name
-}
-
 # Create the API Gateway REST API
 resource "aws_apigatewayv2_api" "api" {
   name          = "MyAPI"

@@ -29,12 +29,12 @@ resource "aws_cognito_user_pool_client" "user_pool_client" {
   allowed_oauth_flows_user_pool_client = true 
 
 
-  # Store the user pool client secret in Secrets Manager
   lifecycle {
     create_before_destroy = true
     ignore_changes        = [user_pool_client_name]
   }
 
+  # Store the user pool client secret in Secrets Manager
   provisioner "local-exec" {
     command = <<-EOT
       aws secretsmanager create-secret \

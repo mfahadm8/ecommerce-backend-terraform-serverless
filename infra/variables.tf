@@ -29,6 +29,11 @@ variable "user_pool_secret_name" {
 }
 
 // Variables for the Postgres module
+variable "db_instance_identifier" {
+  type = string
+  default = "ecommerce-pg-db"
+}
+
 variable "db_name" {
   description = "Name of the PostgresDB"
   type        = string
@@ -44,6 +49,19 @@ variable "db_username" {
 variable "db_password" {
   description = "Password for accessing the PostgresDB"
   type        = string
+  default = "Admin@123"
+}
+
+variable "db_username_secret_name" {
+  description = "Secrets Manager Secret Name for storing DB Username for accessing the PostgresDB"
+  type        = string
+  default = "ecommerce/backend/auth/dbusername"
+}
+
+variable "db_password_secret_name" {
+  description = "Secrets Manager Secret Name for storing DB Password for accessing the PostgresDB"
+  type        = string
+  default = "ecommerce/backend/auth/dbpassword"
 }
 
 // Variables for the Lambda Functions module
@@ -72,10 +90,10 @@ variable "update_stocks_function_name" {
 
 }
 // Variables for the SQS module
-variable "orders_creation_queue_name" {
-  description = "SQS Queue for Order Creation"
+variable "update_stocks_queue_name" {
+  description = "SQS Queue for Updating Stock Information"
   type        = string
-  default = "order-creation-queue"
+  default = "update-stocks-queue"
 }
 
 variable "order_processing_queue_name" {
