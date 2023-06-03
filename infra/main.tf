@@ -24,8 +24,6 @@ module "lambda" {
 
 }
 
-
-
 module "postgres" {
   source = "./modules/postgres"
 
@@ -48,7 +46,8 @@ module "api_gateway" {
   source = "./modules/api_gateway"
 
   name                          = var.api_gateway_name
-  create_order_function_name    = var.create_order_function_name
-  get_customer_orders_function_name = var.get_customer_orders_function_name
-  cognito_user_pool_id          = module.cognito.user_pool_id
+  create_order_function_name    = module.lambda.create_order_lambda_arn
+  get_customer_orders_lambda_arn = module.lambda.get_customer_orders_lambda_arn
+  cognito_user_pool_id          = module.cognito.cognito_user_pool_arn
+
 }
