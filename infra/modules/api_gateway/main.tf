@@ -55,10 +55,10 @@ resource "aws_apigatewayv2_integration" "create_order_lambda_integration" {
 
 }
 
-# Create the API Gateway route
-resource "aws_apigatewayv2_route" "route" {
+# Create the API Gateway route createorder
+resource "aws_apigatewayv2_route" "createorder" {
   api_id          = aws_apigatewayv2_api.api.id
-  route_key       = "POST /orders"
+  route_key       = "POST /createorder"
   target          = "integrations/${aws_apigatewayv2_integration.create_order_lambda_integration.id}"
   authorization_type = "COGNITO_USER_POOLS"
   authorizer_id     = aws_apigatewayv2_authorizer.cognito_authorizer.id
@@ -80,10 +80,10 @@ resource "aws_apigatewayv2_integration" "get_customers_orders_lambda_integration
 
 }
 
-# Create the API Gateway route
-resource "aws_apigatewayv2_route" "route" {
+# Create the API Gateway route getcustomerorder
+resource "aws_apigatewayv2_route" "getcustomerorders" {
   api_id          = aws_apigatewayv2_api.api.id
-  route_key       = "POST /orders"
+  route_key       = "GET /getcustomerorder"
   target          = "integrations/${aws_apigatewayv2_integration.get_customers_orders_lambda_integration.id}"
   authorization_type = "COGNITO_USER_POOLS"
   authorizer_id     = aws_apigatewayv2_authorizer.cognito_authorizer.id

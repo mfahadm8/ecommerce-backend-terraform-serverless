@@ -34,11 +34,6 @@ variable "db_password_secret_name" {
   type        = string
 }
 
-variable "db_password_secret_name" {
-  description = "Secrets Manager Secret Name for storing DB Password for accessing the PostgresDB"
-  type        = string
-}
-
 variable "orders_creation_queue_name" {
   description = "SQS Queue for Order Creation"
   type        = string
