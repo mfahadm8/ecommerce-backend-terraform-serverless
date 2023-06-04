@@ -1,15 +1,9 @@
-
-# modules/cognito/main.tf
-
 resource "aws_cognito_user_pool" "user_pool" {
   name = var.user_pool_name
-
-
   lifecycle {
     create_before_destroy = true
-    ignore_changes        = [user_pool_name]
+    ignore_changes        = [user_pool_client_name]
   }
-
   # Store the user pool ID in Secrets Manager  
   provisioner "local-exec" {
     command = <<-EOT
@@ -20,15 +14,32 @@ resource "aws_cognito_user_pool" "user_pool" {
   }
 }
 
+resource "aws_cognito_resource_server" "resource_server" {
+  name         = "${var.name}"
+  identifier   = "https://api.markaz.com"
+  user_pool_id = "${aws_cognito_user_pool.user_pool.id}"
+
+  scope {
+    scope_name        = "all"
+    scope_description = "Get access to all API Gateway endpoints."
+  }
+}
+
 resource "aws_cognito_user_pool_client" "user_pool_client" {
   name                     = var.user_pool_web_client_name
   user_pool_id             = aws_cognito_user_pool.user_pool.id
-  generate_secret          = true
-  allowed_oauth_flows      = ["code"]
-  allowed_oauth_scopes     = ["openid", "email", "profile"]
-  allowed_oauth_flows_user_pool_client = true 
+  generate_secret                      = true
+  allowed_oauth_flows                  = ["client_credentials"]
+  supported_identity_providers         = ["COGNITO"]
+  allowed_oauth_flows_user_pool_client = true
+  allowed_oauth_scopes                 = ["${aws_cognito_resource_server.resource_server.scope_identifiers}"]
 
+  depends_on = [
+    "aws_cognito_user_pool.user_pool",
+    "aws_cognito_resource_server.resource_server",
+  ]
 
+  
   lifecycle {
     create_before_destroy = true
     ignore_changes        = [user_pool_client_name]
@@ -43,5 +54,3 @@ resource "aws_cognito_user_pool_client" "user_pool_client" {
     EOT
   }
 }
-
-

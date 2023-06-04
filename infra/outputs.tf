@@ -7,5 +7,5 @@ output "postgres_db_endpoint" {
 }
 
 output "postgres_db_credentials_secret_id" {
-  value =  module.postgres.postgres_db_credentials.id
+  value =  module.postgres.postgres_db_credentials_secret_id
 }

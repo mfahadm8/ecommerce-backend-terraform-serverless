@@ -1,94 +1,87 @@
-
-# Create the API Gateway REST API
-resource "aws_apigatewayv2_api" "api" {
-  name          = "MyAPI"
-  protocol_type = "HTTP"
+resource "aws_api_gateway_rest_api" "api_gateway" {
+  name        = var.api_gateway_name
+  description = "API Gateway for the application"
 }
 
-# Create the API Gateway Cognito authorizer
-resource "aws_apigatewayv2_authorizer" "cognito_authorizer" {
-  name          = "CognitoAuthorizer"
-  api_id        = aws_apigatewayv2_api.api.id
-  authorizer_type = "COGNITO_USER_POOLS"
-  identity_source = "$request.header.Authorization"
-  provider_arns  = [var.cognito_user_pool_arn]
+resource "aws_api_gateway_authorizer" "authorizer" {
+  name          = var.name
+  type          = "COGNITO_USER_POOLS"
+  rest_api_id   = aws_api_gateway_rest_api.api_gateway.id
+  provider_arns = ["${var.cognito_user_pool_arn}"]
 }
 
-# Create the API Gateway API key
-resource "aws_apigatewayv2_api_key" "api_key" {
-  name = "WebClientAPIKey"
+resource "aws_api_gateway_resource" "create_order" {
+  rest_api_id = aws_api_gateway_rest_api.api_gateway.id
+  parent_id   = aws_api_gateway_rest_api.api_gateway.root_resource_id
+  path_part   = "create-order"
 }
 
-# Create the API Gateway usage plan
-resource "aws_apigatewayv2_usage_plan" "usage_plan" {
-  name = "WebClientUsagePlan"
+resource "aws_api_gateway_method" "create_order_post_method" {
+  rest_api_id   = aws_api_gateway_rest_api.api_gateway.id
+  resource_id   = aws_api_gateway_resource.create_order.id
+  http_method   = "POST"
+  authorization = "COGNITO_USER_POOLS"
+  authorizer_id = aws_api_gateway_authorizer.authorizer.id
+}
+
+resource "aws_api_gateway_integration" "create_order_integration" {
+  rest_api_id             = aws_api_gateway_rest_api.api_gateway.id
+  resource_id             = aws_api_gateway_resource.create_order.id
+  http_method             = aws_api_gateway_method.create_order_post_method.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = "arn:aws:apigateway:${var.region}:lambda:path/2015-03-31/functions/${var.create_order_lambda_arn}/invocations"
+}
+
+resource "aws_api_gateway_resource" "get_customer_orders" {
+  rest_api_id = aws_api_gateway_rest_api.api_gateway.id
+  parent_id   = aws_api_gateway_rest_api.api_gateway.root_resource_id
+  path_part   = "create-order"
+}
+
+resource "aws_api_gateway_method" "get_customer_orders_get_method" {
+  rest_api_id   = aws_api_gateway_rest_api.api_gateway.id
+  resource_id   = aws_api_gateway_resource.root.id
+  http_method   = "GET"
+  authorization = "COGNITO_USER_POOLS"
+  authorizer_id = aws_api_gateway_authorizer.authorizer.id
+}
+
+resource "aws_api_gateway_integration" "get_customer_orders_integration" {
+  rest_api_id             = aws_api_gateway_rest_api.api_gateway.id
+  resource_id             = aws_api_gateway_resource.get_customer_orders.id
+  http_method             = aws_api_gateway_method.get_customer_orders_get_method.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = "arn:aws:apigateway:${var.region}:lambda:path/2015-03-31/functions/${var.get_customer_orders_lambda_arn}/invocations"
+}
+
+
+resource "aws_api_gateway_deployment" "prod" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  stage_name  = "prod"
+
+  depends_on = [
+    "aws_api_gateway_integration.create_order_integration",
+    "aws_api_gateway_integration.get_customer_orders_integration"
+  ]
+}
+
+resource "aws_api_gateway_usage_plan" "web_usage_plan" {
+  name        = "API Gateway Usage Plan"
+  description = "Usage plan for API Gateway"
   api_stages {
-    api_id   = aws_apigatewayv2_api.api.id
-    stage    = "$default"
-  }
-  quota_settings {
-    limit = 1000
-    period = "MONTH"
-  }
-  throttle_settings {
-    rate_limit = 500
-    burst_limit = 1000
+    api_id = aws_api_gateway_rest_api.api_gateway.id
+    stage  = aws_api_gateway_deployment.prod.stage_name
   }
 }
 
-# Associate the API key with the usage plan
-resource "aws_apigatewayv2_api_key_association" "api_key_association" {
-  api_id      = aws_apigatewayv2_api.api.id
-  api_key_id  = aws_apigatewayv2_api_key.api_key.id
-  stage_name  = "$default"
+resource "aws_api_gateway_api_key" "web_client_api_key" {
+  name = "API Key for the web application"
 }
 
-# Create the API Gateway integration with Lambda
-resource "aws_apigatewayv2_integration" "create_order_lambda_integration" {
-  api_id                 = aws_apigatewayv2_api.api.id
-  integration_type       = "AWS_PROXY"
-  integration_uri        = var.create_order_lambda_arn
-  integration_method     = "POST"
-  connection_type        = "INTERNET"
-  description            = "Lambda integration for CreateOrderFunction"
-  passthrough_behavior   = "WHEN_NO_MATCH"
-
-}
-
-# Create the API Gateway route createorder
-resource "aws_apigatewayv2_route" "createorder" {
-  api_id          = aws_apigatewayv2_api.api.id
-  route_key       = "POST /createorder"
-  target          = "integrations/${aws_apigatewayv2_integration.create_order_lambda_integration.id}"
-  authorization_type = "COGNITO_USER_POOLS"
-  authorizer_id     = aws_apigatewayv2_authorizer.cognito_authorizer.id
-
-  depends_on = [
-    aws_apigatewayv2_integration.lambda_integration,
-  ]
-}
-
-# Create the API Gateway integration with Lambda
-resource "aws_apigatewayv2_integration" "get_customers_orders_lambda_integration" {
-  api_id                 = aws_apigatewayv2_api.api.id
-  integration_type       = "AWS_PROXY"
-  integration_uri        = var.get_customer_orders_lambda_arn
-  integration_method     = "POST"
-  connection_type        = "INTERNET"
-  description            = "Lambda integration for GetCustomerOrdersFunction"
-  passthrough_behavior   = "WHEN_NO_MATCH"
-
-}
-
-# Create the API Gateway route getcustomerorder
-resource "aws_apigatewayv2_route" "getcustomerorders" {
-  api_id          = aws_apigatewayv2_api.api.id
-  route_key       = "GET /getcustomerorder"
-  target          = "integrations/${aws_apigatewayv2_integration.get_customers_orders_lambda_integration.id}"
-  authorization_type = "COGNITO_USER_POOLS"
-  authorizer_id     = aws_apigatewayv2_authorizer.cognito_authorizer.id
-
-  depends_on = [
-    aws_apigatewayv2_integration.get_customers_orders_lambda_integration,
-  ]
+resource "aws_api_gateway_usage_plan_key" "usage_plan_key" {
+  key_id        = aws_api_gateway_api_key.web_client_api_key.id
+  key_type      = "API_KEY"
+  usage_plan_id = aws_api_gateway_usage_plan.web_usage_plan.id
 }
