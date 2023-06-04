@@ -4,9 +4,7 @@ resource "aws_cognito_user_pool" "user_pool" {
   # Store the user pool ID in Secrets Manager  
   provisioner "local-exec" {
     command = <<-EOT
-      aws secretsmanager create-secret \
-        --name ${var.user_pool_secret_name} \
-        --secret-string '${aws_cognito_user_pool.user_pool.id}'
+      aws secretsmanager create-secret --name ${var.user_pool_secret_name} --secret-string '${aws_cognito_user_pool.user_pool.id}'
     EOT
   }
 }
@@ -39,9 +37,7 @@ resource "aws_cognito_user_pool_client" "user_pool_client" {
   # Store the user pool client secret in Secrets Manager
   provisioner "local-exec" {
     command = <<-EOT
-      aws secretsmanager create-secret \
-        --name ${var.user_pool_web_client_secret_name} \
-        --secret-string '${aws_cognito_user_pool_client.user_pool_client.client_secret}'
+      aws secretsmanager create-secret --name ${var.user_pool_web_client_secret_name} --secret-string '${aws_cognito_user_pool_client.user_pool_client.client_secret}'
     EOT
   }
 }

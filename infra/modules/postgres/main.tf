@@ -1,13 +1,13 @@
 
 resource "aws_db_instance" "postgres_instance" {
-  identifier          = var.db_instance_identifier
-  engine              = "postgres"
-  instance_class      = "db.t2.micro"
-  db_name             = var.db_name
-  username            = var.db_username
-  password            = var.db_password
-  publicly_accessible = false
-
+  identifier             = var.db_instance_identifier
+  engine                 = "postgres"
+  instance_class         = "db.t2.micro"
+  db_name                = var.db_name
+  username               = var.db_username
+  password               = var.db_password
+  publicly_accessible    = false
+  allocated_storage      = 10
   vpc_security_group_ids = [aws_security_group.db_security_group.id]
 
   # backup_retention_period   = 7
@@ -32,9 +32,7 @@ resource "aws_db_instance" "postgres_instance" {
 
   provisioner "local-exec" {
     command = <<EOF
-      psql -h ${aws_db_instance.postgres_instance.address} -U ${var.db_username} -p 5432 -d ${var.db_name} -c \
-      "CREATE TABLE Orders (id SERIAL PRIMARY KEY, order_number VARCHAR(50), customer_name VARCHAR(100)); \
-      CREATE TABLE ProductInfo (id SERIAL PRIMARY KEY, product_name VARCHAR(100), stock_count INTEGER);"
+      psql -h ${aws_db_instance.postgres_instance.address} -U ${var.db_username} -p 5432 -d ${var.db_name} -c "CREATE TABLE Orders (id SERIAL PRIMARY KEY, order_number VARCHAR(50), customer_name VARCHAR(100)); CREATE TABLE ProductInfo (id SERIAL PRIMARY KEY, product_name VARCHAR(100), stock_count INTEGER);"
     EOF
   }
 }
