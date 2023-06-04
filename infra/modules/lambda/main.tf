@@ -1,3 +1,11 @@
+data "aws_sqs_queue" "update_stocks_queue" {
+  name = var.update_stocks_queue_name
+}
+
+data "aws_sqs_queue" "order_processing_queue" {
+  name = var.order_processing_queue_name
+}
+
 
 data "archive_file" "create_order_function_package" {
   type        = "zip"
@@ -16,7 +24,7 @@ resource "aws_lambda_function" "create_order_function" {
 
   environment {
     variables = {
-      ORDER_PROCESSING_QUEUE_URL = var.order_processing_queue_url
+      ORDER_PROCESSING_QUEUE_URL = data.aws_sqs_queue.order_processing_queue.url
     }
   }
   depends_on = [aws_lambda_function.update_stocks_function]
@@ -56,7 +64,7 @@ resource "aws_lambda_function" "process_order_function" {
   depends_on       = [aws_lambda_function.update_stocks_function]
   environment {
     variables = {
-      UPDATE_STOCKS_QUEUE_URL = var.update_stocks_queue_url
+      UPDATE_STOCKS_QUEUE_URL = data.aws_sqs_queue.update_stocks_queue.url
     }
   }
 }
@@ -84,7 +92,7 @@ resource "aws_lambda_permission" "order_processing_lambda_queue_permission" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.create_order_function.function_name
   principal     = "sqs.amazonaws.com"
-  source_arn    = var.update_stocks_queue.arn
+  source_arn    = data.aws_sqs_queue.order_processing_queue.arn
 }
 
 resource "aws_lambda_permission" "update_stocks_lambda_queue_permission" {
@@ -92,7 +100,7 @@ resource "aws_lambda_permission" "update_stocks_lambda_queue_permission" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.update_stocks_function.function_name
   principal     = "sqs.amazonaws.com"
-  source_arn    = var.order_processing_queue.arn
+  source_arn    = data.aws_sqs_queue.update_stocks_queue.arn
 }
 
 
@@ -130,7 +138,7 @@ resource "aws_iam_policy" "ecommerce_order_processing_sqs_read_delete_policy" {
         "sqs:DeleteMessage"
       ],
       "Resource": [
-        "arn:aws:sqs:${var.region}:${var.account_id}:${var.orders_processing_queue_name}"
+        "arn:aws:sqs:${var.region}:${var.account_id}:${var.order_processing_queue_name}"
       ]
     }
   ]

@@ -36,20 +36,10 @@ variable "db_password_secret_name" {
 
 
 variable "order_processing_queue_name" {
-  description = "SQS Queue for Updating Stocks"
+  description = "SQS Queue for Processing Orders"
   type        = string
 }
 variable "update_stocks_queue_name" {
-  description = "SQS Queue for Order Creation"
-  type        = string
-}
-
-variable "order_processing_queue_url" {
-  description = "SQS Queue for Order Processing"
-  type        = string
-}
-
-variable "update_stocks_queue_url" {
-  description = "SQS Queue for Processing Orders"
+  description = "SQS Queue for Updating Stocks"
   type        = string
 }

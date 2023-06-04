@@ -42,9 +42,10 @@ module "lambda" {
   update_stocks_function_name       = var.update_stocks_function_name
   db_username_secret_name           = var.db_username_secret_name
   db_password_secret_name           = var.db_password_secret_name
-  order_processing_queue_url        = module.lambda.order_processing_queue_url
-  update_stocks_queue_url           = module.lambda.update_stocks_queue_url
+  order_processing_queue_name       = var.order_processing_queue_name
+  update_stocks_queue_name          = var.update_stocks_queue_name
 
+  depends_on = [module.sqs]
 }
 
 module "api_gateway" {
