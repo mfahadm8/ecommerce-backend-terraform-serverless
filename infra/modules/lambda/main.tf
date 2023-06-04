@@ -97,7 +97,7 @@ resource "aws_lambda_permission" "update_stocks_lambda_queue_permission" {
 
 
 resource "aws_iam_policy" "ecommerce_db_secrets_read_policy" {
-  name   = "ecommerce_secrets_read_policy"
+  name   = "ecommerce_db_secrets_read_policy"
   policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -116,8 +116,8 @@ resource "aws_iam_policy" "ecommerce_db_secrets_read_policy" {
 }
 EOF
 }
-order_processing_queue_nameresource "aws_iam_policy" "ecommerce_order_processing_sqs_read_delete_policy" {
-  name   = "ecommerce_sqs_read_delete_policy"
+resource "aws_iam_policy" "ecommerce_order_processing_sqs_read_delete_policy" {
+  name   = "ecommerce_order_processing_sqs_read_delete_policy"
   policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -139,7 +139,7 @@ EOF
 }
 
 resource "aws_iam_policy" "ecommerce_update_stocks_read_delete_policy" {
-  name   = "ecommerce_sqs_read_delete_policy"
+  name   = "ecommerce_update_stocks_read_delete_policy"
   policy = <<EOF
 {
   "Version": "2012-10-17",
