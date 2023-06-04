@@ -36,7 +36,7 @@ resource "aws_api_gateway_integration" "create_order_integration" {
 resource "aws_api_gateway_resource" "get_customer_orders" {
   rest_api_id = aws_api_gateway_rest_api.api_gateway.id
   parent_id   = aws_api_gateway_rest_api.api_gateway.root_resource_id
-  path_part   = "create-order"
+  path_part   = "get-customer-orders"
 }
 
 resource "aws_api_gateway_method" "get_customer_orders_get_method" {
