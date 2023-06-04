@@ -1,5 +1,5 @@
 
 output "invoke_url" {
-  value = aws_apigatewayv2_api.api.api_endpoint
+  value = aws_api_gateway_deployment.prod.invoke_url
 }
 

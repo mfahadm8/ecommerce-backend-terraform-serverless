@@ -20,6 +20,6 @@ resource "aws_lambda_permission" "update_stocks_lambda_queue_permission" {
   action        = "lambda:InvokeFunction"
   function_name = var.update_stocks_function_name
   principal     = "sqs.amazonaws.com"
-  source_arn    = aws_sqs_queue.order_processing_queue_name.arn
+  source_arn    = aws_sqs_queue.order_processing_queue.arn
 }
 

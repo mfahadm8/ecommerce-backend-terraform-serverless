@@ -3,6 +3,11 @@ variable "api_gateway_name" {
   type        = string
 }
 
+variable "aws_region" {
+  description = "AWS region"
+  type        = string
+}
+
 variable "create_order_lambda_arn" {
   description = "ARN of the CreateOrderFunction Lambda"
   type        = string

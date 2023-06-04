@@ -3,7 +3,7 @@ resource "aws_db_instance" "postgres_instance" {
   identifier          = var.db_instance_identifier
   engine              = "postgres"
   instance_class      = "db.t2.micro"
-  name                = var.db_name
+  db_name             = var.db_name
   username            = var.db_username
   password            = var.db_password
   publicly_accessible = false
@@ -14,7 +14,7 @@ resource "aws_db_instance" "postgres_instance" {
   # backup_window             = "03:00-04:00"
   # maintenance_window        = "mon:03:00-mon:04:00"
   deletion_protection   = true
-  monitoring_interval   = 300
+  monitoring_interval   = 60
   monitoring_role_arn   = aws_iam_role.db_monitoring_role.arn
   storage_encrypted     = true
   kms_key_id            = aws_kms_key.db_kms_key.arn
@@ -71,13 +71,12 @@ resource "aws_iam_role" "db_monitoring_role" {
   ]
 }
 EOF
+}
 
-  // Permissions for the RDS instance
-  policy {
-    name        = "rds-instance-policy"
-    description = "Permissions for RDS instance"
 
-    policy = <<EOF
+resource "aws_iam_policy" "rds_instance_monitoring_policy" {
+  name   = "ecommerce_sqs_read_delete_policy"
+  policy = <<EOF
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -92,12 +91,18 @@ EOF
         "rds:DescribeDBInstanceAttribute",
         "rds:ListTagsForResource"
       ],
-      "Resource": "arn:aws:rds:${var.aws_region}:${var.aws_account_id}:db:${var.db_instance_identifier}"
+      "Resource": "arn:aws:rds:${var.aws_region}:${var.account_id}:db:${var.db_instance_identifier}"
     }
   ]
 }
 EOF
-  }
+
+}
+
+resource "aws_iam_role_policy_attachment" "rds_role_policy_attachment" {
+  policy_arn = aws_iam_policy.rds_instance_monitoring_policy.arn
+  role       = aws_iam_role.db_monitoring_role.arn
+
 }
 
 
@@ -121,7 +126,7 @@ resource "aws_secretsmanager_secret" "postgres_db_credentials" {
 resource "aws_secretsmanager_secret_version" "postgres_db_credentials_version" {
   secret_id     = aws_secretsmanager_secret.postgres_db_credentials.id
   secret_string = <<EOF
-{ "dbname": "${var.db_name}
+{ "dbname": "${var.db_name}",
   "username": "${var.db_username}",
   "password": "${var.db_password}"
 }

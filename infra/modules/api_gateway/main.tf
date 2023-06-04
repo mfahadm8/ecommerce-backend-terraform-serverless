@@ -4,7 +4,7 @@ resource "aws_api_gateway_rest_api" "api_gateway" {
 }
 
 resource "aws_api_gateway_authorizer" "authorizer" {
-  name          = var.name
+  name          = "cognito_authorizer"
   type          = "COGNITO_USER_POOLS"
   rest_api_id   = aws_api_gateway_rest_api.api_gateway.id
   provider_arns = ["${var.cognito_user_pool_arn}"]
@@ -30,7 +30,7 @@ resource "aws_api_gateway_integration" "create_order_integration" {
   http_method             = aws_api_gateway_method.create_order_post_method.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = "arn:aws:apigateway:${var.region}:lambda:path/2015-03-31/functions/${var.create_order_lambda_arn}/invocations"
+  uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.create_order_lambda_arn}/invocations"
 }
 
 resource "aws_api_gateway_resource" "get_customer_orders" {
@@ -41,7 +41,7 @@ resource "aws_api_gateway_resource" "get_customer_orders" {
 
 resource "aws_api_gateway_method" "get_customer_orders_get_method" {
   rest_api_id   = aws_api_gateway_rest_api.api_gateway.id
-  resource_id   = aws_api_gateway_resource.root.id
+  resource_id   = aws_api_gateway_resource.get_customer_orders.id
   http_method   = "GET"
   authorization = "COGNITO_USER_POOLS"
   authorizer_id = aws_api_gateway_authorizer.authorizer.id
@@ -53,17 +53,17 @@ resource "aws_api_gateway_integration" "get_customer_orders_integration" {
   http_method             = aws_api_gateway_method.get_customer_orders_get_method.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = "arn:aws:apigateway:${var.region}:lambda:path/2015-03-31/functions/${var.get_customer_orders_lambda_arn}/invocations"
+  uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.get_customer_orders_lambda_arn}/invocations"
 }
 
 
 resource "aws_api_gateway_deployment" "prod" {
-  rest_api_id = aws_api_gateway_rest_api.api.id
+  rest_api_id = aws_api_gateway_rest_api.api_gateway.id
   stage_name  = "prod"
 
   depends_on = [
-    "aws_api_gateway_integration.create_order_integration",
-    "aws_api_gateway_integration.get_customer_orders_integration"
+    aws_api_gateway_integration.create_order_integration,
+    aws_api_gateway_integration.get_customer_orders_integration
   ]
 }
 

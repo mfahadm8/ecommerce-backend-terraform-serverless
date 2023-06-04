@@ -1,3 +1,9 @@
+variable "aws_region" {
+  description = "Aws region"
+}
+variable "account_id" {
+  description = "Current Aws Account Id"
+}
 variable "db_instance_identifier" {
   description = "Identifier for the PostgresDB instance"
   type        = string
