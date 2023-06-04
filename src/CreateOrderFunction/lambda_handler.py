@@ -1,8 +1,10 @@
 import json
 import boto3
+import os
+
 
 sqs = boto3.client('sqs')
-
+ORDER_PROCESSING_QUEUE_URL=os.environ("ORDER_PROCESSING_QUEUE_URL")
 def lambda_handler(event, context):
     try:
         # Parse the request body to extract the necessary order information
@@ -18,7 +20,7 @@ def lambda_handler(event, context):
 
         # Send the message to the SQS Queue 1
         sqs.send_message(
-            QueueUrl='YOUR_QUEUE1_URL',
+            QueueUrl=ORDER_PROCESSING_QUEUE_URL,
             MessageBody=json.dumps(message)
         )
 

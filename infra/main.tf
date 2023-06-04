@@ -11,18 +11,7 @@ module "cognito" {
   user_pool_web_client_secret_name = var.user_pool_web_client_secret_name
 }
 
-module "lambda" {
-  source                            = "./modules/lambda"
-  account_id                        = data.aws_caller_identity.current.account_id
-  region                            = var.aws_region
-  create_order_function_name        = var.create_order_function_name
-  get_customer_orders_function_name = var.get_customer_orders_function_name
-  process_order_function_name       = var.process_orders_function_name
-  update_stocks_function_name       = var.update_stocks_function_name
-  db_username_secret_name           = var.db_username_secret_name
-  db_password_secret_name           = var.db_password_secret_name
 
-}
 
 module "postgres" {
   source                 = "./modules/postgres"
@@ -41,6 +30,21 @@ module "sqs" {
   order_processing_queue_name  = var.order_processing_queue_name
   process_orders_function_name = var.process_orders_function_name
   update_stocks_function_name  = var.update_stocks_function_name
+}
+
+module "lambda" {
+  source                            = "./modules/lambda"
+  account_id                        = data.aws_caller_identity.current.account_id
+  region                            = var.aws_region
+  create_order_function_name        = var.create_order_function_name
+  get_customer_orders_function_name = var.get_customer_orders_function_name
+  process_order_function_name       = var.process_orders_function_name
+  update_stocks_function_name       = var.update_stocks_function_name
+  db_username_secret_name           = var.db_username_secret_name
+  db_password_secret_name           = var.db_password_secret_name
+  order_processing_queue_url        = module.lambda.order_processing_queue_url
+  update_stocks_queue_url           = module.lambda.update_stocks_queue_url
+
 }
 
 module "api_gateway" {

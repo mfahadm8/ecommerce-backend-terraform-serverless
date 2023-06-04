@@ -1,9 +1,11 @@
 import json
 import boto3
+import os
 
 sqs = boto3.client('sqs')
 secrets_manager = boto3.client('secretsmanager')
 pg = boto3.client('rds-data')
+UPDATE_STOCKS_QUEUE_URL=os.environ("UPDATE_STOCKS_QUEUE_URL")
 
 def lambda_handler(event, context):
     try:
@@ -37,7 +39,7 @@ def lambda_handler(event, context):
 
             # Delete the processed message from SQS Queue 2
             sqs.delete_message(
-                QueueUrl='YOUR_QUEUE2_URL',
+                QueueUrl=UPDATE_STOCKS_QUEUE_URL,
                 ReceiptHandle=record['receiptHandle']
             )
 

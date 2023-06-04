@@ -34,14 +34,22 @@ variable "db_password_secret_name" {
   type        = string
 }
 
-variable "orders_creation_queue_name" {
-  description = "SQS Queue for Order Creation"
-  type        = string
-  default = "order-creation-queue"
-}
 
 variable "order_processing_queue_name" {
+  description = "SQS Queue for Updating Stocks"
+  type        = string
+}
+variable "update_stocks_queue_name" {
+  description = "SQS Queue for Order Creation"
+  type        = string
+}
+
+variable "order_processing_queue_url" {
   description = "SQS Queue for Order Processing"
   type        = string
-  default = "order-processing-queue"
+}
+
+variable "update_stocks_queue_url" {
+  description = "SQS Queue for Processing Orders"
+  type        = string
 }

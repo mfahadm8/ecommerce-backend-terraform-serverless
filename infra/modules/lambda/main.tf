@@ -13,7 +13,13 @@ resource "aws_lambda_function" "create_order_function" {
   role             = aws_iam_role.create_order_function_role.arn
   source_code_hash = filebase64sha256(data.archive_file.create_order_function_package.output_path)
   filename         = "create_order_function_package.zip"
-  depends_on       = [aws_lambda_function.update_stocks_function]
+
+  environment {
+    variables = {
+      ORDER_PROCESSING_QUEUE_URL = var.order_processing_queue_url
+    }
+  }
+  depends_on = [aws_lambda_function.update_stocks_function]
 }
 
 data "archive_file" "get_customer_orders_function_package" {
@@ -48,6 +54,11 @@ resource "aws_lambda_function" "process_order_function" {
   source_code_hash = filebase64sha256(data.archive_file.process_order_function_package.output_path)
   filename         = "process_order_function_package.zip"
   depends_on       = [aws_lambda_function.update_stocks_function]
+  environment {
+    variables = {
+      UPDATE_STOCKS_QUEUE_URL = var.update_stocks_queue_url
+    }
+  }
 }
 
 data "archive_file" "update_stocks_function_package" {
@@ -65,6 +76,23 @@ resource "aws_lambda_function" "update_stocks_function" {
   source_code_hash = filebase64sha256(data.archive_file.update_stocks_function_package.output_path)
   filename         = "update_stocks_function_package.zip"
   depends_on       = [aws_lambda_function.update_stocks_function]
+}
+
+
+resource "aws_lambda_permission" "order_processing_lambda_queue_permission" {
+  statement_id  = "AllowLambdaOrderProcessingQueue"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.create_order_function.function_name
+  principal     = "sqs.amazonaws.com"
+  source_arn    = var.update_stocks_queue.arn
+}
+
+resource "aws_lambda_permission" "update_stocks_lambda_queue_permission" {
+  statement_id  = "AllowLambdaUpdateStocksQueue"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.update_stocks_function.function_name
+  principal     = "sqs.amazonaws.com"
+  source_arn    = var.order_processing_queue.arn
 }
 
 
@@ -88,8 +116,7 @@ resource "aws_iam_policy" "ecommerce_db_secrets_read_policy" {
 }
 EOF
 }
-
-resource "aws_iam_policy" "ecommerce_order_creation_sqs_read_delete_policy" {
+order_processing_queue_nameresource "aws_iam_policy" "ecommerce_order_processing_sqs_read_delete_policy" {
   name   = "ecommerce_sqs_read_delete_policy"
   policy = <<EOF
 {
@@ -103,7 +130,7 @@ resource "aws_iam_policy" "ecommerce_order_creation_sqs_read_delete_policy" {
         "sqs:DeleteMessage"
       ],
       "Resource": [
-        "arn:aws:sqs:${var.region}:${var.account_id}:${var.orders_creation_queue_name}"
+        "arn:aws:sqs:${var.region}:${var.account_id}:${var.orders_processing_queue_name}"
       ]
     }
   ]
@@ -111,7 +138,7 @@ resource "aws_iam_policy" "ecommerce_order_creation_sqs_read_delete_policy" {
 EOF
 }
 
-resource "aws_iam_policy" "ecommerce_order_processing_sqs_read_delete_policy" {
+resource "aws_iam_policy" "ecommerce_update_stocks_read_delete_policy" {
   name   = "ecommerce_sqs_read_delete_policy"
   policy = <<EOF
 {
@@ -125,7 +152,7 @@ resource "aws_iam_policy" "ecommerce_order_processing_sqs_read_delete_policy" {
         "sqs:DeleteMessage"
       ],
       "Resource": [
-        "arn:aws:sqs:${var.region}:${var.account_id}:${var.order_processing_queue_name}"
+        "arn:aws:sqs:${var.region}:${var.account_id}:${var.update_stocks_queue_name}"
       ]
     }
   ]
@@ -158,7 +185,7 @@ EOF
 resource "aws_iam_role_policy_attachment" "create_order_function_role_policy_attachment" {
   for_each = toset([
     aws_iam_policy.ecommerce_db_secrets_read_policy.arn,
-    aws_iam_policy.ecommerce_order_creation_sqs_read_delete_policy.arn,
+    aws_iam_policy.ecommerce_update_stocks_read_delete_policy.arn,
     aws_iam_policy.ecommerce_order_processing_sqs_read_delete_policy.arn
   ])
 
@@ -189,7 +216,7 @@ EOF
 resource "aws_iam_role_policy_attachment" "get_customer_orders_function_role_policy_attachment" {
   for_each = toset([
     aws_iam_policy.ecommerce_db_secrets_read_policy.arn,
-    aws_iam_policy.ecommerce_order_creation_sqs_read_delete_policy.arn,
+    aws_iam_policy.ecommerce_update_stocks_read_delete_policy.arn,
     aws_iam_policy.ecommerce_order_processing_sqs_read_delete_policy.arn
   ])
 
@@ -220,7 +247,7 @@ EOF
 resource "aws_iam_role_policy_attachment" "process_order_function_role_policy_attachment" {
   for_each = toset([
     aws_iam_policy.ecommerce_db_secrets_read_policy.arn,
-    aws_iam_policy.ecommerce_order_creation_sqs_read_delete_policy.arn,
+    aws_iam_policy.ecommerce_update_stocks_read_delete_policy.arn,
     aws_iam_policy.ecommerce_order_processing_sqs_read_delete_policy.arn
   ])
 
@@ -251,7 +278,7 @@ EOF
 resource "aws_iam_role_policy_attachment" "update_stocks_function_role_policy_attachment" {
   for_each = toset([
     aws_iam_policy.ecommerce_db_secrets_read_policy.arn,
-    aws_iam_policy.ecommerce_order_creation_sqs_read_delete_policy.arn,
+    aws_iam_policy.ecommerce_update_stocks_read_delete_policy.arn,
     aws_iam_policy.ecommerce_order_processing_sqs_read_delete_policy.arn
   ])
 
