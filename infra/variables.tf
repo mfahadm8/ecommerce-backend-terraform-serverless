@@ -37,7 +37,7 @@ variable "db_instance_identifier" {
 variable "db_name" {
   description = "Name of the PostgresDB"
   type        = string
-  default     = "ecommerce-db"
+  default     = "ecommercedb"
 }
 
 variable "db_username" {
