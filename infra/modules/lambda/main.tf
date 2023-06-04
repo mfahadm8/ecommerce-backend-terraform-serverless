@@ -9,8 +9,8 @@ data "aws_sqs_queue" "order_processing_queue" {
 
 data "archive_file" "create_order_function_package" {
   type        = "zip"
-  source_dir  = "${path.module}/../../src/CreateOrderFunction"
-  output_path = "${path.module}/../../src/create_order_function_package.zip"
+  source_dir  = "${path.root}/../src/CreateOrderFunction"
+  output_path = "${path.root}/../src/create_order_function_package.zip"
 
 }
 
@@ -19,7 +19,7 @@ resource "aws_lambda_function" "create_order_function" {
   handler          = "index.handler"
   runtime          = "python3.10"
   role             = aws_iam_role.create_order_function_role.arn
-  source_code_hash = filebase64sha256(data.archive_file.create_order_function_package.output_path)
+  source_code_hash = data.archive_file.create_order_function_package.output_base64sha256
   filename         = "create_order_function_package.zip"
 
   environment {
@@ -27,13 +27,13 @@ resource "aws_lambda_function" "create_order_function" {
       ORDER_PROCESSING_QUEUE_URL = data.aws_sqs_queue.order_processing_queue.url
     }
   }
-  depends_on = [aws_lambda_function.update_stocks_function]
+  depends_on = [data.archive_file.create_order_function_package]
 }
 
 data "archive_file" "get_customer_orders_function_package" {
   type        = "zip"
-  source_dir  = "${path.module}/../../src/GetCustomerOrdersFunction"
-  output_path = "${path.module}/../../src/get_customer_orders_function_package.zip"
+  source_dir  = "${path.root}/../src/GetCustomerOrdersFunction"
+  output_path = "${path.root}/../src/get_customer_orders_function_package.zip"
 
 }
 
@@ -42,15 +42,15 @@ resource "aws_lambda_function" "get_customer_orders_function" {
   handler          = "index.handler"
   runtime          = "python3.10"
   role             = aws_iam_role.get_customer_orders_function_role.arn
-  source_code_hash = filebase64sha256(data.archive_file.get_customer_orders_function_package.output_path)
+  source_code_hash = data.archive_file.get_customer_orders_function_package.output_base64sha256
   filename         = "get_customer_orders_function_package.zip"
-  depends_on       = [aws_lambda_function.update_stocks_function]
+  depends_on       = [data.archive_file.get_customer_orders_function_package]
 }
 
 data "archive_file" "process_order_function_package" {
   type        = "zip"
-  source_dir  = "${path.module}/../../src/ProcessOrderFunction"
-  output_path = "${path.module}/../../src/process_order_function_package.zip"
+  source_dir  = "${path.root}/../src/ProcessOrderFunction"
+  output_path = "${path.root}/../src/process_order_function_package.zip"
 
 }
 
@@ -59,9 +59,9 @@ resource "aws_lambda_function" "process_order_function" {
   handler          = "index.handler"
   runtime          = "python3.10"
   role             = aws_iam_role.process_order_function_role.arn
-  source_code_hash = filebase64sha256(data.archive_file.process_order_function_package.output_path)
+  source_code_hash = data.archive_file.process_order_function_package.output_base64sha256
   filename         = "process_order_function_package.zip"
-  depends_on       = [aws_lambda_function.update_stocks_function]
+  depends_on       = [data.archive_file.process_order_function_package]
   environment {
     variables = {
       UPDATE_STOCKS_QUEUE_URL = data.aws_sqs_queue.update_stocks_queue.url
@@ -71,19 +71,17 @@ resource "aws_lambda_function" "process_order_function" {
 
 data "archive_file" "update_stocks_function_package" {
   type        = "zip"
-  source_dir  = "${path.module}/../../src/UpdateStocksFunction"
-  output_path = "${path.module}/../../src/update_stocks_function_package.zip"
-
+  source_dir  = "${path.root}/../src/UpdateStocksFunction"
+  output_path = "${path.root}/../src/update_stocks_function_package.zip"
 }
-
 resource "aws_lambda_function" "update_stocks_function" {
   function_name    = var.update_stocks_function_name
   handler          = "index.handler"
   runtime          = "python3.10"
   role             = aws_iam_role.update_stocks_function_role.arn
-  source_code_hash = filebase64sha256(data.archive_file.update_stocks_function_package.output_path)
+  source_code_hash = data.archive_file.update_stocks_function_package.output_base64sha256
   filename         = "update_stocks_function_package.zip"
-  depends_on       = [aws_lambda_function.update_stocks_function]
+  depends_on       = [data.archive_file.update_stocks_function_package]
 }
 
 
@@ -116,7 +114,7 @@ resource "aws_iam_policy" "ecommerce_db_secrets_read_policy" {
         "secretsmanager:GetSecretValue"
       ],
       "Resource": [
-        "arn:aws:secretsmanager:${var.region}:${var.account_id}:secret:${var.db_username_secret_name}"
+        "arn:aws:secretsmanager:${var.region}:${var.account_id}:secret:${var.db_username_secret_name}",
         "arn:aws:secretsmanager:${var.region}:${var.account_id}:secret:${var.db_password_secret_name}"
       ]
     }
@@ -168,7 +166,13 @@ resource "aws_iam_policy" "ecommerce_update_stocks_read_delete_policy" {
 EOF
 }
 
-
+locals {
+  policy_arns = [
+    aws_iam_policy.ecommerce_db_secrets_read_policy.arn,
+    aws_iam_policy.ecommerce_update_stocks_read_delete_policy.arn,
+    aws_iam_policy.ecommerce_order_processing_sqs_read_delete_policy.arn
+  ]
+}
 
 resource "aws_iam_role" "create_order_function_role" {
   name = "create-order-function-role"
@@ -191,14 +195,10 @@ EOF
 }
 
 resource "aws_iam_role_policy_attachment" "create_order_function_role_policy_attachment" {
-  for_each = toset([
-    aws_iam_policy.ecommerce_db_secrets_read_policy.arn,
-    aws_iam_policy.ecommerce_update_stocks_read_delete_policy.arn,
-    aws_iam_policy.ecommerce_order_processing_sqs_read_delete_policy.arn
-  ])
-
+  count      = length(local.policy_arns)
+  policy_arn = local.policy_arns[count.index]
   role       = aws_iam_role.create_order_function_role.arn
-  policy_arn = each.value
+
 }
 
 resource "aws_iam_role" "get_customer_orders_function_role" {
@@ -222,14 +222,10 @@ EOF
 }
 
 resource "aws_iam_role_policy_attachment" "get_customer_orders_function_role_policy_attachment" {
-  for_each = toset([
-    aws_iam_policy.ecommerce_db_secrets_read_policy.arn,
-    aws_iam_policy.ecommerce_update_stocks_read_delete_policy.arn,
-    aws_iam_policy.ecommerce_order_processing_sqs_read_delete_policy.arn
-  ])
-
+  count      = length(local.policy_arns)
+  policy_arn = local.policy_arns[count.index]
   role       = aws_iam_role.get_customer_orders_function_role.arn
-  policy_arn = each.value
+
 }
 
 resource "aws_iam_role" "process_order_function_role" {
@@ -253,14 +249,10 @@ EOF
 }
 
 resource "aws_iam_role_policy_attachment" "process_order_function_role_policy_attachment" {
-  for_each = toset([
-    aws_iam_policy.ecommerce_db_secrets_read_policy.arn,
-    aws_iam_policy.ecommerce_update_stocks_read_delete_policy.arn,
-    aws_iam_policy.ecommerce_order_processing_sqs_read_delete_policy.arn
-  ])
-
+  count      = length(local.policy_arns)
+  policy_arn = local.policy_arns[count.index]
   role       = aws_iam_role.process_order_function_role.arn
-  policy_arn = each.value
+
 }
 
 resource "aws_iam_role" "update_stocks_function_role" {
@@ -284,13 +276,9 @@ EOF
 }
 
 resource "aws_iam_role_policy_attachment" "update_stocks_function_role_policy_attachment" {
-  for_each = toset([
-    aws_iam_policy.ecommerce_db_secrets_read_policy.arn,
-    aws_iam_policy.ecommerce_update_stocks_read_delete_policy.arn,
-    aws_iam_policy.ecommerce_order_processing_sqs_read_delete_policy.arn
-  ])
-
+  count      = length(local.policy_arns)
+  policy_arn = local.policy_arns[count.index]
   role       = aws_iam_role.update_stocks_function_role.arn
-  policy_arn = each.value
+
 }
 
