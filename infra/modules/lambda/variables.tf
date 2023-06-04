@@ -44,11 +44,6 @@ variable "update_stocks_queue_name" {
   type        = string
 }
 
-variable "pg_db_endpoint" {
-  description = "PostgressDB endpoint to hit"
-  type        = string
-}
-
 variable "lambda_security_group_id" {
   description = "Security group for Lambda Functions"
   type        = string

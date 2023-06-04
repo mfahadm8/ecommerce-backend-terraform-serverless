@@ -49,7 +49,6 @@ variable "db_username" {
 variable "db_password" {
   description = "Password for accessing the PostgresDB"
   type        = string
-  default     = "TestDbUser@123"
 }
 
 variable "db_username_secret_name" {

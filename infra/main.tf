@@ -47,7 +47,6 @@ module "lambda" {
   pg_creds_secret_name              = module.postgres.postgres_db_credentials_secret_id
   order_processing_queue_name       = var.order_processing_queue_name
   update_stocks_queue_name          = var.update_stocks_queue_name
-  pg_db_endpoint                    = module.postgres.postgres_db_endpoint
   subnet_ids                        = module.networking.subnet_ids
   lambda_security_group_id          = module.networking.lambda_security_group_id
   depends_on                        = [module.sqs]

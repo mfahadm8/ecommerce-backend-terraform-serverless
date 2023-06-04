@@ -6,11 +6,12 @@ sqs = boto3.client('sqs')
 secrets_manager = boto3.client('secretsmanager')
 pg = boto3.client('rds-data')
 UPDATE_STOCKS_QUEUE_URL=os.environ("UPDATE_STOCKS_QUEUE_URL")
+PG_CREDS_SECRET_NAME=os.environ("PG_CREDS_SECRET_NAME")
 
 def lambda_handler(event, context):
     try:
         # Retrieve the PostgresDB credentials from Secrets Manager
-        secret = secrets_manager.get_secret_value(SecretId='YOUR_POSTGRES_DB_CREDENTIALS_SECRET_ID')
+        secret = secrets_manager.get_secret_value(SecretId=PG_CREDS_SECRET_NAME)
         credentials = json.loads(secret['SecretString'])
 
         # Connect to the PostgresDB

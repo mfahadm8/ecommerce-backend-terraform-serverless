@@ -30,15 +30,6 @@ resource "aws_db_instance" "postgres_instance" {
     create_before_destroy = true
   }
 
-  provisioner "local-exec" {
-    command = "sleep 60" // Wait for the DB instance to be fully created before executing the following commands
-  }
-
-  provisioner "local-exec" {
-    command = <<EOF
-      psql -h ${aws_db_instance.postgres_instance.address} -U ${var.db_username} -p 5432 -d ${var.db_name} -c "CREATE TABLE Orders (id SERIAL PRIMARY KEY, order_number VARCHAR(50), customer_name VARCHAR(100)); CREATE TABLE ProductInfo (id SERIAL PRIMARY KEY, product_name VARCHAR(100), stock_count INTEGER);"
-    EOF
-  }
 }
 
 resource "aws_iam_role" "db_monitoring_role" {
@@ -112,13 +103,21 @@ resource "aws_secretsmanager_secret" "postgres_db_credentials" {
   }
 }
 
+
 resource "aws_secretsmanager_secret_version" "postgres_db_credentials_version" {
-  secret_id     = aws_secretsmanager_secret.postgres_db_credentials.id
-  secret_string = <<EOF
-{ "dbname": "${var.db_name}",
-  "username": "${var.db_username}",
-  "password": "${var.db_password}"
-}
-EOF
+  secret_id = aws_secretsmanager_secret.postgres_db_credentials.id
+  secret_string = jsonencode({
+    username = aws_db_instance.postgres_instance.username
+    password = aws_db_instance.postgres_instance.password
+    engine   = aws_db_instance.postgres_instance.engine
+    host     = aws_db_instance.postgres_instance.endpoint
+    port     = aws_db_instance.postgres_instance.port
+  })
+
+  provisioner "local-exec" {
+    command = <<EOF
+    aws rds-data execute-statement --resource-arn ${aws_db_instance.postgres_instance.arn} --secret-arn ${aws_secretsmanager_secret.postgres_db_credentials.arn} --database ${aws_db_instance.postgres_instance.db_name} --sql "CREATE TABLE Orders (id SERIAL PRIMARY KEY, order_number VARCHAR(50), customer_name VARCHAR(100)); CREATE TABLE ProductInfo (id SERIAL PRIMARY KEY, product_name VARCHAR(100), stock_count INTEGER);"
+    EOF
+  }
 }
 

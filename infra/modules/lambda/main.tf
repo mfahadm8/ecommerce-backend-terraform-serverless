@@ -52,7 +52,6 @@ resource "aws_lambda_function" "get_customer_orders_function" {
   }
   environment {
     variables = {
-      PG_ENDPOINT          = var.pg_db_endpoint
       PG_CREDS_SECRET_NAME = var.pg_creds_secret_name
     }
   }
@@ -80,7 +79,6 @@ resource "aws_lambda_function" "process_order_function" {
   environment {
     variables = {
       UPDATE_STOCKS_QUEUE_URL = data.aws_sqs_queue.update_stocks_queue.url
-      PG_ENDPOINT             = var.pg_db_endpoint
       PG_CREDS_SECRET_NAME    = var.pg_creds_secret_name
     }
   }
@@ -106,7 +104,6 @@ resource "aws_lambda_function" "update_stocks_function" {
   }
   environment {
     variables = {
-      PG_ENDPOINT          = var.pg_db_endpoint
       PG_CREDS_SECRET_NAME = var.pg_creds_secret_name
     }
   }
@@ -129,7 +126,27 @@ resource "aws_lambda_permission" "update_stocks_lambda_queue_permission" {
   source_arn    = data.aws_sqs_queue.update_stocks_queue.arn
 }
 
-
+resource "aws_iam_policy" "ecommerce_private_connectivity_policy" {
+  name   = "ecommerce-private-connectivity-policy"
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ec2:CreateNetworkInterface",
+        "ec2:DescribeNetworkInterfaces", 
+        "ec2:DeleteNetworkInterface"
+      ],
+      "Resource": [
+        "*"
+      ]
+    }
+  ]
+}
+EOF
+}
 resource "aws_iam_policy" "ecommerce_db_secrets_read_policy" {
   name   = "ecommerce-db-secrets-read-policy"
   policy = <<EOF
@@ -195,6 +212,7 @@ EOF
 
 locals {
   policy_arns = [
+    aws_iam_policy.ecommerce_private_connectivity_policy.arn,
     aws_iam_policy.ecommerce_db_secrets_read_policy.arn,
     aws_iam_policy.ecommerce_update_stocks_read_delete_policy.arn,
     aws_iam_policy.ecommerce_order_processing_sqs_read_delete_policy.arn

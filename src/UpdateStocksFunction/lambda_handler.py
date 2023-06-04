@@ -1,7 +1,9 @@
 import json
-import psycopg2
+import psycopg2 # Instead of boto3, lets try psycopg2 this time
 import boto3
+import os
 
+PG_CREDS_SECRET_NAME=os.environ("PG_CREDS_SECRET_NAME")
 
 def get_secret(secret_name):
     # Create a Secrets Manager client
@@ -24,8 +26,7 @@ def lambda_handler(event, context):
     records = event['Records']
 
     # Retrieve the database credentials from Secrets Manager
-    secret_name = 'your-secret-name'  # Replace with your Secrets Manager secret name
-    secret = get_secret(secret_name)
+    secret = get_secret(PG_CREDS_SECRET_NAME)
 
     # Extract the database credentials
     db_host = secret['host']
