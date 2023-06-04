@@ -3,6 +3,10 @@ provider "aws" {
 }
 data "aws_caller_identity" "current" {}
 
+module "networking" {
+  source = "./modules/networking"
+}
+
 module "cognito" {
   source                           = "./modules/cognito"
   user_pool_name                   = var.cognito_user_pool_id
@@ -10,8 +14,6 @@ module "cognito" {
   user_pool_secret_name            = var.user_pool_secret_name
   user_pool_web_client_secret_name = var.user_pool_web_client_secret_name
 }
-
-
 
 module "postgres" {
   source                 = "./modules/postgres"
@@ -21,6 +23,8 @@ module "postgres" {
   db_name                = var.db_name
   db_username            = var.db_username
   db_password            = var.db_password
+  subnet_ids             = module.networking.subnet_ids
+  rds_security_group_id  = module.networking.rds_security_group_id
 }
 
 module "sqs" {
@@ -44,8 +48,10 @@ module "lambda" {
   db_password_secret_name           = var.db_password_secret_name
   order_processing_queue_name       = var.order_processing_queue_name
   update_stocks_queue_name          = var.update_stocks_queue_name
-
-  depends_on = [module.sqs]
+  pg_db_endpoint                    = module.postgres.postgres_db_endpoint
+  subnet_ids                        = module.networking.subnet_ids
+  lambda_security_group_id          = module.networking.lambda_security_group_id
+  depends_on                        = [module.sqs]
 }
 
 module "api_gateway" {

@@ -4,6 +4,12 @@ variable "region" {
 variable "account_id" {
   description = "Current Aws Account Id"
 }
+
+variable "subnet_ids" {
+  description = "List of subnet IDs"
+  type        = list(string)
+  default     = []
+}
 variable "create_order_function_name" {
   description = "Name of the CreateOrderFunction Lambda"
   type        = string
@@ -41,5 +47,15 @@ variable "order_processing_queue_name" {
 }
 variable "update_stocks_queue_name" {
   description = "SQS Queue for Updating Stocks"
+  type        = string
+}
+
+variable "pg_db_endpoint" {
+  description = "PostgressDB endpoint to hit"
+  type        = string
+}
+
+variable "lambda_security_group_id" {
+  description = "Security group for Lambda Functions"
   type        = string
 }

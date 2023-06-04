@@ -1,16 +1,20 @@
-
+resource "aws_db_subnet_group" "ecommerce_db_subnet_group" {
+  name        = "ecommerce-db-subnet-group"
+  description = "Ecommerce DB subnet group"
+  subnet_ids  = var.subnet_ids
+}
 resource "aws_db_instance" "postgres_instance" {
   identifier             = var.db_instance_identifier
   engine                 = "postgres"
-  instance_class         = "db.t2.micro"
+  instance_class         = "db.t3.micro"
   db_name                = var.db_name
   username               = var.db_username
   password               = var.db_password
   publicly_accessible    = false
   allocated_storage      = 10
-  vpc_security_group_ids = [aws_security_group.db_security_group.id]
-
-  # backup_retention_period   = 7
+  vpc_security_group_ids = [var.rds_security_group_id]
+  db_subnet_group_name   = aws_db_subnet_group.ecommerce_db_subnet_group.name
+  # backup_retention_period   = 7   # as per best practices, one should configure backup of db as well but I am commenting it for now
   # backup_window             = "03:00-04:00"
   # maintenance_window        = "mon:03:00-mon:04:00"
   deletion_protection   = true
@@ -36,21 +40,6 @@ resource "aws_db_instance" "postgres_instance" {
     EOF
   }
 }
-
-resource "aws_security_group" "db_security_group" {
-  name        = "db_security_group"
-  description = "Security group for RDS database"
-
-  ingress {
-    from_port   = 5432
-    to_port     = 5432
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  // Add any other necessary security group rules for the RDS database
-}
-
 
 resource "aws_iam_role" "db_monitoring_role" {
   name = "db_monitoring_role"
@@ -99,7 +88,7 @@ EOF
 
 resource "aws_iam_role_policy_attachment" "rds_role_policy_attachment" {
   policy_arn = aws_iam_policy.rds_instance_monitoring_policy.arn
-  role       = aws_iam_role.db_monitoring_role.arn
+  role       = aws_iam_role.db_monitoring_role.name
 
 }
 
@@ -114,8 +103,10 @@ resource "aws_kms_key" "db_kms_key" {
 
 
 resource "aws_secretsmanager_secret" "postgres_db_credentials" {
-  name = "postgres-db-credentials"
-
+  name = "pg-db-credentials"
+  lifecycle {
+    prevent_destroy = true
+  }
   tags = {
     Name = "PostgresDB Credentials"
   }

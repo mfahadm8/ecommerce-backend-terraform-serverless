@@ -25,6 +25,7 @@ resource "aws_lambda_function" "create_order_function" {
   environment {
     variables = {
       ORDER_PROCESSING_QUEUE_URL = data.aws_sqs_queue.order_processing_queue.url
+      PG_ENDPOINT                = var.pg_db_endpoint
     }
   }
   depends_on = [data.archive_file.create_order_function_package]
@@ -33,7 +34,7 @@ resource "aws_lambda_function" "create_order_function" {
 data "archive_file" "get_customer_orders_function_package" {
   type        = "zip"
   source_dir  = "${path.root}/../src/GetCustomerOrdersFunction"
-  output_path = "${path.root}/../src/get_customer_orders_function_package.zip"
+  output_path = "${path.root}/../tmp/get_customer_orders_function_package.zip"
 
 }
 
@@ -45,12 +46,22 @@ resource "aws_lambda_function" "get_customer_orders_function" {
   source_code_hash = data.archive_file.get_customer_orders_function_package.output_base64sha256
   filename         = data.archive_file.create_order_function_package.output_path
   depends_on       = [data.archive_file.get_customer_orders_function_package]
+
+  vpc_config {
+    subnet_ids         = [var.subnet_ids[0], var.subnet_ids[1]]
+    security_group_ids = [var.lambda_security_group_id]
+  }
+  environment {
+    variables = {
+      PG_ENDPOINT = var.pg_db_endpoint
+    }
+  }
 }
 
 data "archive_file" "process_order_function_package" {
   type        = "zip"
   source_dir  = "${path.root}/../src/ProcessOrderFunction"
-  output_path = "${path.root}/../src/process_order_function_package.zip"
+  output_path = "${path.root}/../tmp/process_order_function_package.zip"
 
 }
 
@@ -62,6 +73,10 @@ resource "aws_lambda_function" "process_order_function" {
   source_code_hash = data.archive_file.process_order_function_package.output_base64sha256
   filename         = data.archive_file.create_order_function_package.output_path
   depends_on       = [data.archive_file.process_order_function_package]
+  vpc_config {
+    subnet_ids         = [var.subnet_ids[0], var.subnet_ids[1]]
+    security_group_ids = [var.lambda_security_group_id]
+  }
   environment {
     variables = {
       UPDATE_STOCKS_QUEUE_URL = data.aws_sqs_queue.update_stocks_queue.url
@@ -72,7 +87,7 @@ resource "aws_lambda_function" "process_order_function" {
 data "archive_file" "update_stocks_function_package" {
   type        = "zip"
   source_dir  = "${path.root}/../src/UpdateStocksFunction"
-  output_path = "${path.root}/../src/update_stocks_function_package.zip"
+  output_path = "${path.root}/../tmp/update_stocks_function_package.zip"
 }
 resource "aws_lambda_function" "update_stocks_function" {
   function_name    = var.update_stocks_function_name
@@ -82,6 +97,16 @@ resource "aws_lambda_function" "update_stocks_function" {
   source_code_hash = data.archive_file.update_stocks_function_package.output_base64sha256
   filename         = data.archive_file.create_order_function_package.output_path
   depends_on       = [data.archive_file.update_stocks_function_package]
+
+  vpc_config {
+    subnet_ids         = [var.subnet_ids[0], var.subnet_ids[1]]
+    security_group_ids = [var.lambda_security_group_id]
+  }
+  environment {
+    variables = {
+      PG_ENDPOINT = var.pg_db_endpoint
+    }
+  }
 }
 
 
