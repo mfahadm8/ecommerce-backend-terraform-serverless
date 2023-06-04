@@ -44,8 +44,7 @@ module "lambda" {
   get_customer_orders_function_name = var.get_customer_orders_function_name
   process_order_function_name       = var.process_orders_function_name
   update_stocks_function_name       = var.update_stocks_function_name
-  db_username_secret_name           = var.db_username_secret_name
-  db_password_secret_name           = var.db_password_secret_name
+  pg_creds_secret_name              = module.postgres.postgres_db_credentials_secret_id
   order_processing_queue_name       = var.order_processing_queue_name
   update_stocks_queue_name          = var.update_stocks_queue_name
   pg_db_endpoint                    = module.postgres.postgres_db_endpoint

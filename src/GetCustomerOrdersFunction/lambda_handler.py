@@ -1,9 +1,9 @@
 import json
 import boto3
-
+import os
 secrets_manager = boto3.client('secretsmanager')
 pg = boto3.client('rds-data')
-
+PG_ENDPOINT=os.environ("PG_ENDPOINT")
 def lambda_handler(event, context):
     try:
         # Retrieve the PostgresDB credentials from Secrets Manager

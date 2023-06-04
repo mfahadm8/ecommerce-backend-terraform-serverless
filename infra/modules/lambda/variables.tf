@@ -30,16 +30,10 @@ variable "update_stocks_function_name" {
   type        = string
 }
 
-variable "db_username_secret_name" {
+variable "pg_creds_secret_name" {
   description = "Secrets Manager Secret Name for storing DB Username for accessing the PostgresDB"
   type        = string
 }
-
-variable "db_password_secret_name" {
-  description = "Secrets Manager Secret Name for storing DB Password for accessing the PostgresDB"
-  type        = string
-}
-
 
 variable "order_processing_queue_name" {
   description = "SQS Queue for Processing Orders"

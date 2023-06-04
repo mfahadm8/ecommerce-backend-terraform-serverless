@@ -25,7 +25,6 @@ resource "aws_lambda_function" "create_order_function" {
   environment {
     variables = {
       ORDER_PROCESSING_QUEUE_URL = data.aws_sqs_queue.order_processing_queue.url
-      PG_ENDPOINT                = var.pg_db_endpoint
     }
   }
   depends_on = [data.archive_file.create_order_function_package]
@@ -53,7 +52,8 @@ resource "aws_lambda_function" "get_customer_orders_function" {
   }
   environment {
     variables = {
-      PG_ENDPOINT = var.pg_db_endpoint
+      PG_ENDPOINT          = var.pg_db_endpoint
+      PG_CREDS_SECRET_NAME = var.pg_creds_secret_name
     }
   }
 }
@@ -80,6 +80,8 @@ resource "aws_lambda_function" "process_order_function" {
   environment {
     variables = {
       UPDATE_STOCKS_QUEUE_URL = data.aws_sqs_queue.update_stocks_queue.url
+      PG_ENDPOINT             = var.pg_db_endpoint
+      PG_CREDS_SECRET_NAME    = var.pg_creds_secret_name
     }
   }
 }
@@ -104,7 +106,8 @@ resource "aws_lambda_function" "update_stocks_function" {
   }
   environment {
     variables = {
-      PG_ENDPOINT = var.pg_db_endpoint
+      PG_ENDPOINT          = var.pg_db_endpoint
+      PG_CREDS_SECRET_NAME = var.pg_creds_secret_name
     }
   }
 }
@@ -139,8 +142,7 @@ resource "aws_iam_policy" "ecommerce_db_secrets_read_policy" {
         "secretsmanager:GetSecretValue"
       ],
       "Resource": [
-        "arn:aws:secretsmanager:${var.region}:${var.account_id}:secret:${var.db_username_secret_name}",
-        "arn:aws:secretsmanager:${var.region}:${var.account_id}:secret:${var.db_password_secret_name}"
+        "arn:aws:secretsmanager:${var.region}:${var.account_id}:secret:${var.pg_creds_secret_name}"
       ]
     }
   ]
