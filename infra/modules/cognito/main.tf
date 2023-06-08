@@ -11,7 +11,7 @@ resource "aws_cognito_user_pool" "user_pool" {
 
 resource "aws_cognito_resource_server" "resource_server" {
   name         = "cognito_resource_server"
-  identifier   = "https://api.markaz.com"
+  identifier   = "https://api.eccommercewebsite.com"
   user_pool_id = aws_cognito_user_pool.user_pool.id
 
   scope {

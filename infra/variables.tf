@@ -7,7 +7,7 @@ variable "aws_region" {
 variable "cognito_user_pool_id" {
   description = "Cognito User Pool ID"
   type        = string
-  default     = "markaz-cognito-user-pool"
+  default     = "cognito-user-pool"
 }
 
 variable "cognito_web_client_id" {
